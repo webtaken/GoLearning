@@ -14,7 +14,7 @@ var mapping [16]color.RGBA
 
 func main() {
 	if len(os.Args) < 2 {
-		log.Fatal("No provided name of the PNG file")
+		log.Fatal("No provided name of the image file, usage: ./bin <FILENAME>")
 	}
 
 	mapping[0] = color.RGBA{66, 30, 15, 255}
