@@ -8,6 +8,10 @@ func main() {
 	var ptr *[3]byte = &a
 	zeroes(ptr)
 	fmt.Printf("%T\t%[1]v\n", a)
+
+	strArr := []string{"one", "", "three"}
+
+	fmt.Printf("%v\n", strArr[0:0])
 }
 
 func zeroes(ptr *[3]byte) {
