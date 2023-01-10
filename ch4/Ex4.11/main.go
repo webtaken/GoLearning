@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"Ex4.11/github"
+	"github.com/joho/godotenv"
 )
 
 func readCredentials(repo, owner *string) {
@@ -131,6 +132,11 @@ func console(crudOption string) {
 func main() {
 	if len(os.Args) < 2 {
 		log.Fatalf("Usage:\n -./bin <CRUL>\n--------------------------------\n - <CRUD>: e.g. \"create\"|\"read\"|\"update\"|\"lock\"")
+	}
+
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("%s", err)
 	}
 
 	console(os.Args[1])
