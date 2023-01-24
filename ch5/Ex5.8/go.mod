@@ -1,4 +1,4 @@
-module Ex5.7
+module Ex5.8
 
 go 1.19
 
