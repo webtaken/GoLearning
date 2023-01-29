@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"strings"
 
@@ -18,7 +19,7 @@ func main() {
 // breadthFirst calls f for each item in the worklist.
 // Any items returned by f are added to the worklist.
 // f is called at most once for each item.
-func breadthFirst(f func(item string, mainDomain string) []string, worklist []string, mainDomain string) {
+func breadthFirst(f func(item string) []string, worklist []string, mainDomain string) {
 	seen := make(map[string]bool)
 	for len(worklist) > 0 {
 		items := worklist
@@ -26,33 +27,44 @@ func breadthFirst(f func(item string, mainDomain string) []string, worklist []st
 		for _, item := range items {
 			if !seen[item] {
 				seen[item] = true
-				worklist = append(worklist, f(item, mainDomain)...)
+				worklist = append(worklist, f(item)...)
 			}
 		}
 	}
 }
 
-func crawl(url string, mainDomain string) []string {
-	if strings.HasPrefix(url, mainDomain) {
-		filename := url
-		filename = strings.ReplaceAll(filename, "https://", "")
-		filename = strings.ReplaceAll(filename, ".html", "")
-		filename = strings.ReplaceAll(filename, ".", "_")
-		filename = fmt.Sprintf("crawling/page_%s.html", filename)
-		f, err := os.Create(filename)
+var domain string
+
+func crawl(a string) []string {
+	if domain == "" {
+		p, err := url.Parse(a)
 		if err != nil {
-			log.Print(err)
+			log.Fatalf("crawl %s get: %v", err)
 		}
-		defer f.Close()
-		links.ExtractContent(url, f)
+		domain = p.Hostname()
+		if strings.HasPrefix(domain, "www.") {
+			domain = domain[4:]
+		}
+		fmt.Printf("Domain: %s \n\n", domain)
 	}
-	validator := func(link string) bool {
-		return strings.HasPrefix(link, mainDomain)
-	}
-	fmt.Printf("Crawling urls from: %s\n", url)
-	list, err := links.Extract(url, validator)
+
+	list, err := links.Extract(a)
 	if err != nil {
 		log.Print(err)
 	}
-	return list
+
+	// filter out all links with different domain
+	out := list[:0]
+	for _, l := range list {
+		p, err := url.Parse(l)
+		if err != nil {
+			// skip invalid url
+			continue
+		}
+		if strings.Contains(p.Hostname(), domain) {
+			fmt.Println(l)
+			out = append(out, l)
+		}
+	}
+	return out
 }

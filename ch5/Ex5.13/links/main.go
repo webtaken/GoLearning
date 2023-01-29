@@ -3,8 +3,6 @@ package links
 
 import (
 	"fmt"
-	"io"
-	"log"
 	"net/http"
 
 	"golang.org/x/net/html"
@@ -12,7 +10,7 @@ import (
 
 // Extract makes an HTTP GET request to the specified URL, parses
 // the response as HTML, and returns the links in the HTML document.
-func Extract(url string, validator func(url string) bool) ([]string, error) {
+func Extract(url string) ([]string, error) {
 	resp, err := http.Get(url)
 	if err != nil {
 		return nil, err
@@ -37,28 +35,12 @@ func Extract(url string, validator func(url string) bool) ([]string, error) {
 				if err != nil {
 					continue // ignore bad URLs
 				}
-				// if the url pass the validation
-				if validator(link.String()) {
-					links = append(links, link.String())
-				}
+				links = append(links, link.String())
 			}
 		}
 	}
 	forEachNode(doc, visitNode, nil)
 	return links, nil
-}
-
-func ExtractContent(url string, out io.Writer) {
-	resp, err := http.Get(url)
-	if err != nil {
-		log.Print(err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		resp.Body.Close()
-		log.Printf("getting %s: %s", url, resp.Status)
-	}
-	resp.Write(out)
-	resp.Body.Close()
 }
 
 func forEachNode(n *html.Node, pre, post func(n *html.Node)) {
