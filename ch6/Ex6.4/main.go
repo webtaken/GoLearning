@@ -96,6 +96,21 @@ func (s *IntSet) AddAll(vals ...int) {
 	}
 }
 
+func (s *IntSet) Elems() []int {
+	elems := make([]int, 0)
+	for i, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for j := 0; j < 64; j++ {
+			if word&(1<<uint(j)) != 0 {
+				elems = append(elems, 64*i+j)
+			}
+		}
+	}
+	return elems
+}
+
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
 	buf.WriteByte('{')
@@ -154,4 +169,8 @@ func main() {
 	B := x.Copy() // "{3 5 9 10 42 144}"
 	B.SymmetricDifference(A)
 	fmt.Println(B.String()) // "{3 5 10}"
+
+	for _, elem := range x.Elems() {
+		fmt.Printf("%v ", elem*elem) // "9 25 81 100 1764 20736"
+	}
 }

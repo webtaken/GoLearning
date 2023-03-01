@@ -5,17 +5,19 @@ import (
 	"fmt"
 )
 
+const SIZE = 32 << (^uint(0) >> 63)
+
 type IntSet struct {
-	words []uint64
+	words []uint
 }
 
 func (s *IntSet) Has(x int) bool {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/SIZE, uint(x%SIZE)
 	return word < len(s.words) && s.words[word]&(1<<bit) != 0
 }
 
 func (s *IntSet) Add(x int) {
-	word, bit := x/64, uint(x%64)
+	word, bit := x/SIZE, uint(x%SIZE)
 	for word >= len(s.words) {
 		s.words = append(s.words, 0)
 	}
@@ -24,7 +26,7 @@ func (s *IntSet) Add(x int) {
 
 func (s *IntSet) Remove(x int) {
 	if s.Has(x) {
-		word, bit := x/64, uint(x%64)
+		word, bit := x/SIZE, uint(x%SIZE)
 		s.words[word] &^= 1 << bit
 	}
 }
@@ -34,7 +36,7 @@ func (s *IntSet) Clear() {
 }
 
 func (s *IntSet) Copy() *IntSet {
-	var newIntSet *IntSet = &IntSet{words: make([]uint64, len(s.words))}
+	var newIntSet *IntSet = &IntSet{words: make([]uint, len(s.words))}
 	copy(newIntSet.words, s.words)
 	return newIntSet
 }
@@ -96,6 +98,21 @@ func (s *IntSet) AddAll(vals ...int) {
 	}
 }
 
+func (s *IntSet) Elems() []int {
+	elems := make([]int, 0)
+	for i, word := range s.words {
+		if word == 0 {
+			continue
+		}
+		for j := 0; j < SIZE; j++ {
+			if word&(1<<uint(j)) != 0 {
+				elems = append(elems, SIZE*i+j)
+			}
+		}
+	}
+	return elems
+}
+
 func (s *IntSet) String() string {
 	var buf bytes.Buffer
 	buf.WriteByte('{')
@@ -103,12 +120,12 @@ func (s *IntSet) String() string {
 		if word == 0 {
 			continue
 		}
-		for j := 0; j < 64; j++ {
+		for j := 0; j < SIZE; j++ {
 			if word&(1<<uint(j)) != 0 {
 				if buf.Len() > len("{") {
 					buf.WriteByte(' ')
 				}
-				fmt.Fprintf(&buf, "%d", 64*i+j)
+				fmt.Fprintf(&buf, "%d", SIZE*i+j)
 			}
 		}
 	}
@@ -117,6 +134,8 @@ func (s *IntSet) String() string {
 }
 
 func main() {
+	fmt.Println("Machine arquitecture:", SIZE)
+
 	var x, y IntSet
 	x.Add(1)
 	x.Add(144)
@@ -154,4 +173,8 @@ func main() {
 	B := x.Copy() // "{3 5 9 10 42 144}"
 	B.SymmetricDifference(A)
 	fmt.Println(B.String()) // "{3 5 10}"
+
+	for _, elem := range x.Elems() {
+		fmt.Printf("%v ", elem*elem) // "9 25 81 100 1764 20736"
+	}
 }
