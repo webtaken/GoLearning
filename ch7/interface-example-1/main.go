@@ -26,6 +26,10 @@ func (s Square) area() float64 {
 	return s.width * s.height
 }
 
+func (s Square) perim() float64 {
+	return s.width*2 + 2*s.height
+}
+
 func main() {
 	c1 := Circle{radius: 4}
 	s1 := Square{width: 10, height: 10}

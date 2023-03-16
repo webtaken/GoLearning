@@ -24,23 +24,27 @@ func oddEvenList(head *ListNode) *ListNode {
 	if head == nil {
 		return nil
 	}
-	if head.Next == nil {
-		return head
+	o := head
+	e := head.Next
+	oo := head
+	ee := head.Next
+	i := 1
+	if e == nil {
+		return o
 	}
-	if head.Next.Next == nil {
-		return head
+	for oo.Next != nil && ee.Next != nil {
+		if (i % 2) == 1 {
+			oo.Next = ee.Next
+			oo = oo.Next
+		} else {
+			ee.Next = oo.Next
+			ee = ee.Next
+		}
+		i++
 	}
-
-	evenStart := head.Next
-	even_i := head.Next
-	odd_i := head
-
-	for ; odd_i != nil; odd_i = odd_i.Next {
-		odd_i.Next = odd_i.Next.Next
+	if ee.Next != nil {
+		ee.Next = oo.Next
 	}
-	for ; even_i != nil; even_i = even_i.Next {
-		even_i.Next = even_i.Next.Next
-	}
-	odd_i.Next = evenStart
-	return head
+	oo.Next = e
+	return o
 }
