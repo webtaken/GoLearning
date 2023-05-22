@@ -1,0 +1,20 @@
+<notes>
+    <note>
+        <to>Tove</to>
+        <from>Jani</from>
+        <heading>Reminder</heading>
+        <body>Don't forget me this weekend!</body>
+    </note>
+    <note>
+        <to>Pedro</to>
+        <from>Javi</from>
+        <heading>Salutation</heading>
+        <body>Hi</body>
+    </note>
+    <note>
+        <to>Saul</to>
+        <from>Maria</from>
+        <heading>Chau</heading>
+        <body>chau my friend</body>
+    </note>
+</notes>
