@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/cmplx"
 	"os"
+	"sync"
 	"time"
 )
 
@@ -44,37 +45,48 @@ func main() {
 	f, _ := os.Create(os.Args[1])
 
 	start := time.Now()
+	var wg sync.WaitGroup
 	for py := 0; py < height; py++ {
 		y := float64(py)/height*(ymax-ymin) + ymin
-		for px := 0; px < width; px++ {
-			x := float64(px)/width*(xmax-xmin) + xmin
-			z := complex(x, y)
-			// Image point (px, py) represents complex value z.
-			img.Set(px, py, mandelbrot(z))
-		}
+		wg.Add(1)
+		go func(py int, y float64) {
+			defer wg.Done()
+			for px := 0; px < width; px++ {
+				x := float64(px)/width*(xmax-xmin) + xmin
+				z := complex(x, y)
+				// Image point (px, py) represents complex value z.
+				img.Set(px, py, mandelbrot(z))
+			}
+		}(py, y)
 	}
+
+	wg.Wait()
 
 	// Now we will computer supersampling
 	for py := 0; py < height; py += 2 {
-		for px := 0; px < width; px += 2 {
-			r1, g1, b1, _ := img.At(px, py).RGBA()
-			r2, g2, b2, _ := img.At(px+1, py).RGBA()
-			r3, g3, b3, _ := img.At(px, py+1).RGBA()
-			r4, g4, b4, _ := img.At(px+1, py+1).RGBA()
+		wg.Add(1)
+		go func(py int) {
+			defer wg.Done()
+			for px := 0; px < width; px += 2 {
+				r1, g1, b1, _ := img.At(px, py).RGBA()
+				r2, g2, b2, _ := img.At(px+1, py).RGBA()
+				r3, g3, b3, _ := img.At(px, py+1).RGBA()
+				r4, g4, b4, _ := img.At(px+1, py+1).RGBA()
 
-			avgRed := (r1 + r2 + r3 + r4) / 4
-			avgGreen := (g1 + g2 + g3 + g4) / 4
-			avgBlue := (b1 + b2 + b3 + b4) / 4
+				avgRed := (r1 + r2 + r3 + r4) / 4
+				avgGreen := (g1 + g2 + g3 + g4) / 4
+				avgBlue := (b1 + b2 + b3 + b4) / 4
 
-			pxAvg := color.RGBA{uint8(avgRed), uint8(avgGreen), uint8(avgBlue), 255}
+				pxAvg := color.RGBA{uint8(avgRed), uint8(avgGreen), uint8(avgBlue), 255}
 
-			img.Set(px, py, pxAvg)
-			img.Set(px+1, py, pxAvg)
-			img.Set(px, py+1, pxAvg)
-			img.Set(px+1, py+1, pxAvg)
-		}
+				img.Set(px, py, pxAvg)
+				img.Set(px+1, py, pxAvg)
+				img.Set(px, py+1, pxAvg)
+				img.Set(px+1, py+1, pxAvg)
+			}
+		}(py)
 	}
-
+	wg.Wait()
 	png.Encode(f, img) // NOTE: ignoring errors
 	timeElapsed := time.Since(start)
 	fmt.Printf("Execution time took %d(ms)", timeElapsed.Milliseconds())
