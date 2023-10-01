@@ -3,36 +3,32 @@ package links
 
 import (
 	"fmt"
-	"ioutil"
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
-func URLToSlug(url string) string {
-	// Remove the scheme from the URL, if it exists.
-	if strings.HasPrefix(url, "https://") || strings.HasPrefix(url, "http://") {
-		url = url[len("https://"):]
+func GetPathFromURL(link string) (string, error) {
+	// Parse the URL.
+	parsedURL, err := url.Parse(link)
+	if err != nil {
+		return "", err
 	}
-
-	// Remove the query parameters from the URL, if it exists.
-	if strings.Contains(url, "?") {
-		url = url[:strings.Index(url, "?")]
+	path := parsedURL.Path
+	if path == "" {
+		return "/index.html", nil
 	}
-
-	// Convert the URL to lowercase.
-	url = strings.ToLower(url)
-
-	// Replace all non-alphanumeric characters with hyphens (`-`).
-	url = strings.ReplaceAll(url, `[^a-zA-Z0-9]+`, "-")
-
-	// Remove any leading or trailing hyphens.
-	url = strings.Trim(url, "-")
-
-	return url
+	if path[len(path)-1] == '/' {
+		return path + "index.html", nil
+	}
+	// remove .html suffix
+	path = strings.TrimSuffix(path, ".html")
+	path += ".html"
+	return path, nil
 }
 
 func GetDomain(link string) (string, error) {
@@ -47,13 +43,24 @@ func GetDomain(link string) (string, error) {
 	return hostname, nil
 }
 
-func WriteHTML(filename string, node *html.Node) error {
-	fileWriter, err := ioutil.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+func WriteHTMLToFile(filename string, doc *html.Node) error {
+	dir := filepath.Dir(filename)
+	err := os.MkdirAll(dir, os.ModePerm)
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(fileWriter, "%v", node)
-	defer fileWriter.Close()
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = html.Render(file, doc)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -86,11 +93,14 @@ func Extract(url string, domain string) ([]string, *html.Node, error) {
 				}
 				linkDomain, err := GetDomain(link.String())
 				if err != nil {
-					continue // ignore bad URLs
+					continue
 				}
 				if linkDomain != domain {
-					// not domain URL now has the URL of the mirorred URL
+					// domain not belonging to the original domain
+					// fmt.Printf("changing link from %s to %s\n",
+					// 	link.String(), resp.Request.URL.String())
 					a.Val = resp.Request.URL.String()
+					continue
 				}
 				links = append(links, link.String())
 			}

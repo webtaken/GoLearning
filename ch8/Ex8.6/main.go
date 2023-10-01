@@ -2,22 +2,35 @@ package main
 
 import (
 	"findlinks3/links"
+	"flag"
 	"fmt"
 	"log"
-	"os"
 )
 
-func main() {
-	worklist := make(chan []string)
-	unseenLinks := make(chan string) // de-duplicated URLS
+var websiteURL string
 
-	// Add command-line arguments to worklist.
-	go func() { worklist <- os.Args[1:] }()
-	// Create 20 crawler goroutines to fetch each unseen link.
-	for i := 0; i < 20; i++ {
+func init() {
+	flag.StringVar(&websiteURL, "url", "https://link-busters.com", "starting url to crawl (default https://link-busters.com)")
+}
+
+func main() {
+	flag.Parse()
+
+	worklist := make(chan []string)
+	unseenLinks := make(chan string) // de-duplicated URLS (key) with its depth as value
+
+	originDomain, err := links.GetDomain(websiteURL)
+	if err != nil {
+		log.Fatalf("%v\n", err)
+	}
+
+	go func() { worklist <- []string{websiteURL} }()
+
+	nCrawlers := 5
+	for i := 0; i < nCrawlers; i++ {
 		go func() {
 			for link := range unseenLinks {
-				foundLinks := crawl(link)
+				foundLinks := crawl(link, originDomain)
 				go func() { worklist <- foundLinks }()
 			}
 		}()
@@ -35,11 +48,18 @@ func main() {
 	}
 }
 
-func crawl(url string) []string {
+func crawl(url, domain string) []string {
 	fmt.Printf("Crawling urls from: %s\n", url)
-	list, err := links.Extract(url)
+	list, _, err := links.Extract(url, domain)
 	if err != nil {
 		log.Print(err)
 	}
+	// Writing mirrored page
+	filename := links.URLToSlug(url)
+	fmt.Printf("writing page to file: %s.html\n", filename)
+	// err = links.WriteHTML(filename, page)
+	// if err != nil {
+	// 	log.Print(err)
+	// }
 	return list
 }
