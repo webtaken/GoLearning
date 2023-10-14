@@ -2,12 +2,14 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
 	"log"
 	"math/cmplx"
 	"os"
+	"time"
 )
 
 var mapping [16]color.RGBA
@@ -40,6 +42,8 @@ func main() {
 	)
 	img := image.NewRGBA(image.Rect(0, 0, width, height))
 	f, _ := os.Create(os.Args[1])
+
+	start := time.Now()
 	for py := 0; py < height; py++ {
 		y := float64(py)/height*(ymax-ymin) + ymin
 		for px := 0; px < width; px++ {
@@ -72,6 +76,8 @@ func main() {
 	}
 
 	png.Encode(f, img) // NOTE: ignoring errors
+	timeElapsed := time.Since(start)
+	fmt.Printf("Execution time took %d(ms)", timeElapsed.Milliseconds())
 }
 
 func mandelbrot(z complex128) color.Color {
