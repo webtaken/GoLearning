@@ -6,7 +6,6 @@ import (
 	"log"
 	"net"
 	"strings"
-	"time"
 )
 
 type client chan<- string // an outgoing message channel
@@ -98,7 +97,7 @@ func clientWriter(conn net.Conn, registered *bool, ch <-chan string) {
 }
 
 func handleConn(conn net.Conn) {
-	ch := make(chan string) // outgoing client messages
+	ch := make(chan string, 20) // outgoing client messages
 	registered := false
 	go clientWriter(conn, &registered, ch)
 	who := conn.RemoteAddr().String()
@@ -109,16 +108,8 @@ func handleConn(conn net.Conn) {
 	}
 	entering <- ch
 
-	timeout := time.NewTimer(5 * time.Minute)
-	go func() {
-		<-timeout.C
-		timeout.Stop()
-		conn.Close()
-	}()
-
 	input := bufio.NewScanner(conn)
 	for input.Scan() {
-		timeout.Reset(5 * time.Minute)
 		if !registered {
 			messages <- chatMessage{
 				message: "[register]:" + input.Text(),
